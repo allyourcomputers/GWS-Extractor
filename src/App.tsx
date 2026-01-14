@@ -2,6 +2,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./lib/AuthContext";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
+import Dashboard from "./pages/Dashboard";
+import ConnectionSettings from "./pages/ConnectionSettings";
+import DomainFilters from "./pages/DomainFilters";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -17,7 +20,23 @@ function App() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <div>Dashboard (coming soon)</div>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/connections/:id"
+        element={
+          <ProtectedRoute>
+            <ConnectionSettings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/connections/:id/domains"
+        element={
+          <ProtectedRoute>
+            <DomainFilters />
           </ProtectedRoute>
         }
       />
