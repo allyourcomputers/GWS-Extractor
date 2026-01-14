@@ -121,7 +121,8 @@ export default function ConnectionSettings() {
       navigate("/dashboard");
     } catch (error) {
       console.error("Failed to save:", error);
-      alert("Failed to save connection");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`Failed to save connection: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -157,7 +158,8 @@ export default function ConnectionSettings() {
       setNewSheetName("");
     } catch (error) {
       console.error("Failed to create spreadsheet:", error);
-      alert("Failed to create spreadsheet");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`Failed to create spreadsheet: ${errorMessage}`);
     } finally {
       setCreatingSheet(false);
     }
