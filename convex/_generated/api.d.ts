@@ -9,6 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as google_oauth from "../google/oauth.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +19,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  "google/oauth": typeof google_oauth;
 }>;
 
 /**
