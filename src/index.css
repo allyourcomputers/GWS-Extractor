@@ -220,3 +220,105 @@ body {
   border-radius: 8px;
   color: #666;
 }
+
+.settings-page {
+  max-width: 600px;
+}
+
+.settings-page h2 {
+  margin-bottom: 1.5rem;
+}
+
+.settings-form {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input[type="text"],
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-group.checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: normal;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+}
+
+.save-button {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.save-button:hover:not(:disabled) {
+  background: #3367d6;
+}
+
+.cancel-button {
+  background: transparent;
+  border: 1px solid #ddd;
+  padding: 10px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-button {
+  background: #d9534f;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.delete-button:hover {
+  background: #c9302c;
+}
+
+.domain-filters-link {
+  margin-top: 1.5rem;
+}
+
+.link-button {
+  background: transparent;
+  border: none;
+  color: #4285f4;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
