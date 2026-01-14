@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "google-workspace": {
+      "command": "npx",
+      "args": ["-y", "@presto-ai/google-workspace-mcp"]
+    }
+  }
+}
+
