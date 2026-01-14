@@ -52,3 +52,8 @@ body {
 .google-button:hover {
   background: #3367d6;
 }
+
+.error-text {
+  color: #d9534f;
+  margin-bottom: 1rem;
+}
