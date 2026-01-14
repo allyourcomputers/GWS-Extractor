@@ -322,3 +322,123 @@ body {
 .link-button:hover {
   text-decoration: underline;
 }
+
+.domains-page {
+  max-width: 600px;
+}
+
+.domains-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.back-button {
+  background: transparent;
+  border: none;
+  color: #4285f4;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.domains-description {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.domains-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-domain-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.add-domain-form input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.add-domain-form button {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.bulk-toggle {
+  background: transparent;
+  border: none;
+  color: #4285f4;
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.bulk-import {
+  margin-bottom: 1rem;
+}
+
+.bulk-import textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  font-family: inherit;
+}
+
+.bulk-import button {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.domains-list {
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
+}
+
+.no-domains {
+  color: #999;
+  text-align: center;
+  padding: 1rem;
+}
+
+.domain-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+.domain-item:last-child {
+  border-bottom: none;
+}
+
+.remove-button {
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+}
+
+.remove-button:hover {
+  color: #d9534f;
+}
