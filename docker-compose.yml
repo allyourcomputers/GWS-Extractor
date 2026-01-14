@@ -4,7 +4,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:80"
+      - "3300:80"
     environment:
       - VITE_CONVEX_URL=${VITE_CONVEX_URL}
       - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
