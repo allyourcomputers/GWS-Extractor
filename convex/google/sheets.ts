@@ -1,0 +1,114 @@
+import { action } from "../_generated/server";
+import { v } from "convex/values";
+
+export const getSheetData = action({
+  args: {
+    accessToken: v.string(),
+    spreadsheetId: v.string(),
+    range: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${args.spreadsheetId}/values/${encodeURIComponent(args.range)}`,
+      {
+        headers: { Authorization: `Bearer ${args.accessToken}` },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { values: [] };
+      }
+      const error = await response.text();
+      throw new Error(`Sheets API error: ${error}`);
+    }
+
+    const data = await response.json();
+    return { values: data.values || [] };
+  },
+});
+
+export const appendRows = action({
+  args: {
+    accessToken: v.string(),
+    spreadsheetId: v.string(),
+    range: v.string(),
+    values: v.array(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${args.spreadsheetId}/values/${encodeURIComponent(args.range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${args.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ values: args.values }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Sheets API error: ${error}`);
+    }
+
+    return await response.json();
+  },
+});
+
+export const updateRows = action({
+  args: {
+    accessToken: v.string(),
+    spreadsheetId: v.string(),
+    updates: v.array(
+      v.object({
+        range: v.string(),
+        values: v.array(v.array(v.string())),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${args.spreadsheetId}/values:batchUpdate`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${args.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          valueInputOption: "USER_ENTERED",
+          data: args.updates,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Sheets API error: ${error}`);
+    }
+
+    return await response.json();
+  },
+});
+
+export const listSpreadsheets = action({
+  args: { accessToken: v.string() },
+  handler: async (ctx, args) => {
+    const response = await fetch(
+      "https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.spreadsheet'&fields=files(id,name)",
+      {
+        headers: { Authorization: `Bearer ${args.accessToken}` },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Drive API error: ${error}`);
+    }
+
+    const data = await response.json();
+    return data.files as Array<{ id: string; name: string }>;
+  },
+});

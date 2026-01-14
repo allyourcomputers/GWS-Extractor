@@ -14,6 +14,7 @@ import type * as connections from "../connections.js";
 import type * as domains from "../domains.js";
 import type * as google_gmail from "../google/gmail.js";
 import type * as google_oauth from "../google/oauth.js";
+import type * as google_sheets from "../google/sheets.js";
 import type * as sync from "../sync.js";
 
 import type {
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   domains: typeof domains;
   "google/gmail": typeof google_gmail;
   "google/oauth": typeof google_oauth;
+  "google/sheets": typeof google_sheets;
   sync: typeof sync;
 }>;
 
