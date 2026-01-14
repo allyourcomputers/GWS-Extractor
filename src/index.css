@@ -108,3 +108,82 @@ body {
   margin: 0 auto;
   width: 100%;
 }
+
+.connection-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+.connection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.connection-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.edit-button {
+  background: transparent;
+  border: 1px solid #ddd;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-button:hover {
+  background: #f5f5f5;
+}
+
+.connection-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  color: #666;
+}
+
+.connection-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.connection-footer span {
+  color: #999;
+  font-size: 0.875rem;
+}
+
+.sync-button {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sync-button:hover:not(:disabled) {
+  background: #3367d6;
+}
+
+.sync-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.connection-error {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #fee;
+  color: #c00;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
