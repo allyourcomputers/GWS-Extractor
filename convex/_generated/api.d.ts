@@ -11,10 +11,12 @@
 import type * as addresses from "../addresses.js";
 import type * as auth from "../auth.js";
 import type * as connections from "../connections.js";
+import type * as crons from "../crons.js";
 import type * as domains from "../domains.js";
 import type * as google_gmail from "../google/gmail.js";
 import type * as google_oauth from "../google/oauth.js";
 import type * as google_sheets from "../google/sheets.js";
+import type * as scheduler from "../scheduler.js";
 import type * as sheets from "../sheets.js";
 import type * as sync from "../sync.js";
 
@@ -28,10 +30,12 @@ declare const fullApi: ApiFromModules<{
   addresses: typeof addresses;
   auth: typeof auth;
   connections: typeof connections;
+  crons: typeof crons;
   domains: typeof domains;
   "google/gmail": typeof google_gmail;
   "google/oauth": typeof google_oauth;
   "google/sheets": typeof google_sheets;
+  scheduler: typeof scheduler;
   sheets: typeof sheets;
   sync: typeof sync;
 }>;
