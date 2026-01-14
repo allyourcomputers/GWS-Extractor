@@ -12,6 +12,7 @@ import type * as addresses from "../addresses.js";
 import type * as auth from "../auth.js";
 import type * as connections from "../connections.js";
 import type * as domains from "../domains.js";
+import type * as google_gmail from "../google/gmail.js";
 import type * as google_oauth from "../google/oauth.js";
 
 import type {
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   connections: typeof connections;
   domains: typeof domains;
+  "google/gmail": typeof google_gmail;
   "google/oauth": typeof google_oauth;
 }>;
 
