@@ -41,6 +41,8 @@ export default function ConnectionSettings() {
     Array<{ id: string; name: string }>
   >([]);
   const [loading, setLoading] = useState(false);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (connection) {
@@ -55,22 +57,34 @@ export default function ConnectionSettings() {
 
   useEffect(() => {
     const loadOptions = async () => {
-      if (!auth?.accessToken) return;
+      if (!auth?.accessToken) {
+        console.log("No access token available");
+        return;
+      }
+
+      setLoadingOptions(true);
+      setOptionsError(null);
 
       try {
+        console.log("Loading Gmail labels and spreadsheets...");
         const [labelsResult, spreadsheetsResult] = await Promise.all([
           listLabels({ accessToken: auth.accessToken }),
           listSpreadsheets({ accessToken: auth.accessToken }),
         ]);
+        console.log("Labels loaded:", labelsResult);
+        console.log("Spreadsheets loaded:", spreadsheetsResult);
         setLabels(labelsResult);
         setSpreadsheets(spreadsheetsResult);
       } catch (error) {
         console.error("Failed to load options:", error);
+        setOptionsError(error instanceof Error ? error.message : "Failed to load Gmail folders and spreadsheets");
+      } finally {
+        setLoadingOptions(false);
       }
     };
 
     loadOptions();
-  }, [auth?.accessToken]);
+  }, [auth?.accessToken, listLabels, listSpreadsheets]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +140,13 @@ export default function ConnectionSettings() {
       <div className="settings-page">
         <h2>{isNew ? "Add Connection" : "Edit Connection"}</h2>
 
+        {optionsError && (
+          <div className="options-error">
+            <p>Error loading Gmail folders and spreadsheets: {optionsError}</p>
+            <p>Please try signing out and signing back in.</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="settings-form">
           <div className="form-group">
             <label>Name</label>
@@ -140,33 +161,45 @@ export default function ConnectionSettings() {
 
           <div className="form-group">
             <label>Gmail Folder</label>
-            <select
-              value={mailboxFolder}
-              onChange={(e) => setMailboxFolder(e.target.value)}
-            >
-              {labels.map((label) => (
-                <option key={label.id} value={label.id}>
-                  {label.name}
-                </option>
-              ))}
-              {labels.length === 0 && <option value="INBOX">INBOX</option>}
-            </select>
+            {loadingOptions ? (
+              <select disabled>
+                <option>Loading folders...</option>
+              </select>
+            ) : (
+              <select
+                value={mailboxFolder}
+                onChange={(e) => setMailboxFolder(e.target.value)}
+              >
+                {labels.length === 0 && <option value="INBOX">INBOX</option>}
+                {labels.map((label) => (
+                  <option key={label.id} value={label.id}>
+                    {label.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="form-group">
             <label>Google Sheet</label>
-            <select
-              value={sheetsId}
-              onChange={(e) => setSheetsId(e.target.value)}
-              required
-            >
-              <option value="">Select a spreadsheet...</option>
-              {spreadsheets.map((sheet) => (
-                <option key={sheet.id} value={sheet.id}>
-                  {sheet.name}
-                </option>
-              ))}
-            </select>
+            {loadingOptions ? (
+              <select disabled>
+                <option>Loading spreadsheets...</option>
+              </select>
+            ) : (
+              <select
+                value={sheetsId}
+                onChange={(e) => setSheetsId(e.target.value)}
+                required
+              >
+                <option value="">Select a spreadsheet...</option>
+                {spreadsheets.map((sheet) => (
+                  <option key={sheet.id} value={sheet.id}>
+                    {sheet.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="form-group">

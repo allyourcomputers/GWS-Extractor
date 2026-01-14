@@ -58,6 +58,28 @@ body {
   margin-bottom: 1rem;
 }
 
+.options-error {
+  background: #fee;
+  color: #c00;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #fcc;
+}
+
+.options-error p {
+  margin: 0;
+}
+
+.options-error p:first-child {
+  font-weight: 500;
+}
+
+.options-error p:last-child {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
 .layout {
   min-height: 100vh;
   display: flex;
