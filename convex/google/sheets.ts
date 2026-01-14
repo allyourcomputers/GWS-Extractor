@@ -7,7 +7,7 @@ export const getSheetData = action({
     spreadsheetId: v.string(),
     range: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${args.spreadsheetId}/values/${encodeURIComponent(args.range)}`,
       {
@@ -35,7 +35,7 @@ export const appendRows = action({
     range: v.string(),
     values: v.array(v.array(v.string())),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${args.spreadsheetId}/values/${encodeURIComponent(args.range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
       {
@@ -68,7 +68,7 @@ export const updateRows = action({
       })
     ),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${args.spreadsheetId}/values:batchUpdate`,
       {
@@ -95,7 +95,7 @@ export const updateRows = action({
 
 export const listSpreadsheets = action({
   args: { accessToken: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const response = await fetch(
       "https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.spreadsheet'&fields=files(id,name)",
       {

@@ -21,7 +21,7 @@ export const listMessages = action({
     afterTimestamp: v.optional(v.number()),
     pageToken: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     let query = `in:${args.labelId}`;
     if (args.afterTimestamp) {
       const date = new Date(args.afterTimestamp);
@@ -64,7 +64,7 @@ export const getMessage = action({
     accessToken: v.string(),
     messageId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const response = await fetch(
       `https://gmail.googleapis.com/gmail/v1/users/me/messages/${args.messageId}?format=metadata&metadataHeaders=From`,
       {
@@ -93,7 +93,7 @@ export const getMessage = action({
 
 export const listLabels = action({
   args: { accessToken: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const response = await fetch(
       "https://gmail.googleapis.com/gmail/v1/users/me/labels",
       {

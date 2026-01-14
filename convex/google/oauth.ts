@@ -1,10 +1,9 @@
-import { action, internalMutation } from "../_generated/server";
+import { action } from "../_generated/server";
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
 
 export const exchangeCodeForTokens = action({
   args: { code: v.string(), redirectUri: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
@@ -58,7 +57,7 @@ export const exchangeCodeForTokens = action({
 
 export const refreshAccessToken = action({
   args: { refreshToken: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
