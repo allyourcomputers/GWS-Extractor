@@ -29,6 +29,7 @@ export default function ConnectionSettings() {
   const deleteConnection = useMutation(api.connections.remove);
   const listLabels = useAction(api.google.gmail.listLabels);
   const listSpreadsheets = useAction(api.google.sheets.listSpreadsheets);
+  const createSpreadsheet = useAction(api.google.sheets.createSpreadsheet);
 
   const [name, setName] = useState("");
   const [mailboxFolder, setMailboxFolder] = useState("INBOX");
@@ -43,6 +44,9 @@ export default function ConnectionSettings() {
   const [loading, setLoading] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [optionsError, setOptionsError] = useState<string | null>(null);
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
+  const [newSheetName, setNewSheetName] = useState("");
+  const [creatingSheet, setCreatingSheet] = useState(false);
 
   useEffect(() => {
     if (connection) {
@@ -135,6 +139,30 @@ export default function ConnectionSettings() {
     }
   };
 
+  const handleCreateSpreadsheet = async () => {
+    if (!newSheetName.trim() || !auth?.accessToken) return;
+
+    setCreatingSheet(true);
+    try {
+      const newSheet = await createSpreadsheet({
+        accessToken: auth.accessToken,
+        title: newSheetName.trim(),
+        sheetName: sheetTab || "Addresses",
+      });
+
+      // Add to spreadsheets list and select it
+      setSpreadsheets((prev) => [newSheet, ...prev]);
+      setSheetsId(newSheet.id);
+      setShowCreateSheet(false);
+      setNewSheetName("");
+    } catch (error) {
+      console.error("Failed to create spreadsheet:", error);
+      alert("Failed to create spreadsheet");
+    } finally {
+      setCreatingSheet(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="settings-page">
@@ -187,18 +215,61 @@ export default function ConnectionSettings() {
                 <option>Loading spreadsheets...</option>
               </select>
             ) : (
-              <select
-                value={sheetsId}
-                onChange={(e) => setSheetsId(e.target.value)}
-                required
-              >
-                <option value="">Select a spreadsheet...</option>
-                {spreadsheets.map((sheet) => (
-                  <option key={sheet.id} value={sheet.id}>
-                    {sheet.name}
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  value={sheetsId}
+                  onChange={(e) => setSheetsId(e.target.value)}
+                  required={!showCreateSheet}
+                  disabled={showCreateSheet}
+                >
+                  <option value="">Select a spreadsheet...</option>
+                  {spreadsheets.map((sheet) => (
+                    <option key={sheet.id} value={sheet.id}>
+                      {sheet.name}
+                    </option>
+                  ))}
+                </select>
+                {!showCreateSheet ? (
+                  <button
+                    type="button"
+                    className="link-button create-sheet-toggle"
+                    onClick={() => setShowCreateSheet(true)}
+                  >
+                    + Create new spreadsheet
+                  </button>
+                ) : (
+                  <div className="create-sheet-form">
+                    <input
+                      type="text"
+                      value={newSheetName}
+                      onChange={(e) => setNewSheetName(e.target.value)}
+                      placeholder="Enter spreadsheet name..."
+                      disabled={creatingSheet}
+                    />
+                    <div className="create-sheet-actions">
+                      <button
+                        type="button"
+                        onClick={handleCreateSpreadsheet}
+                        disabled={creatingSheet || !newSheetName.trim()}
+                        className="create-sheet-button"
+                      >
+                        {creatingSheet ? "Creating..." : "Create"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCreateSheet(false);
+                          setNewSheetName("");
+                        }}
+                        disabled={creatingSheet}
+                        className="cancel-create-button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

@@ -464,3 +464,62 @@ body {
 .remove-button:hover {
   color: #d9534f;
 }
+
+.create-sheet-toggle {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.create-sheet-form {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.create-sheet-form input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.create-sheet-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.create-sheet-button {
+  background: #34a853;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.create-sheet-button:hover:not(:disabled) {
+  background: #2d9249;
+}
+
+.create-sheet-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.cancel-create-button {
+  background: transparent;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.cancel-create-button:hover:not(:disabled) {
+  background: #f5f5f5;
+}

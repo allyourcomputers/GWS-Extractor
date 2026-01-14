@@ -112,3 +112,46 @@ export const listSpreadsheets = action({
     return data.files as Array<{ id: string; name: string }>;
   },
 });
+
+export const createSpreadsheet = action({
+  args: {
+    accessToken: v.string(),
+    title: v.string(),
+    sheetName: v.optional(v.string()),
+  },
+  handler: async (_ctx, args) => {
+    const response = await fetch(
+      "https://sheets.googleapis.com/v4/spreadsheets",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${args.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          properties: {
+            title: args.title,
+          },
+          sheets: [
+            {
+              properties: {
+                title: args.sheetName || "Addresses",
+              },
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Sheets API error: ${error}`);
+    }
+
+    const data = await response.json();
+    return {
+      id: data.spreadsheetId as string,
+      name: data.properties.title as string,
+    };
+  },
+});
