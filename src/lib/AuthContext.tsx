@@ -22,9 +22,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<AuthState | null>(null);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("auth");
-    if (stored) {
-      setAuth(JSON.parse(stored));
+    try {
+      const stored = sessionStorage.getItem("auth");
+      if (stored) {
+        setAuth(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error("Failed to restore auth state:", error);
+      sessionStorage.removeItem("auth");
     }
   }, []);
 
