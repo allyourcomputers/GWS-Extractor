@@ -65,15 +65,64 @@ npm run dev
 
 The app will be available at http://localhost:5173
 
-## Docker Deployment
+## Production Deployment
 
-### Build and Run
+### Important: Two-Part Deployment
+
+This app has two parts that must be deployed:
+1. **Convex Backend** - Serverless functions deployed to Convex cloud
+2. **Frontend** - React app served via Docker/nginx
+
+**You must deploy Convex functions before the app will work!**
+
+### Quick Deploy (Recommended)
+
+Use the deploy script to handle everything:
 
 ```bash
-docker-compose up -d
+./deploy.sh
+```
+
+This will:
+1. Install dependencies
+2. Deploy Convex functions to the cloud
+3. Build the frontend
+
+### Manual Deployment
+
+#### Step 1: Deploy Convex Functions
+
+```bash
+npm install
+npx convex deploy
+```
+
+You'll need to authenticate with Convex the first time:
+```bash
+npx convex login
+```
+
+#### Step 2: Build and Run Docker
+
+```bash
+docker-compose up -d --build
 ```
 
 The app will be available at http://localhost:3300
+
+### Automated Deployment with Deploy Key
+
+For CI/CD pipelines, use a Convex deploy key instead of interactive login:
+
+1. Go to your Convex dashboard: https://dashboard.convex.dev
+2. Select your project > Settings > Deploy Keys
+3. Generate a new deploy key
+4. Set it as an environment variable:
+
+```bash
+export CONVEX_DEPLOY_KEY=your-deploy-key
+npx convex deploy
+```
 
 ### Environment Variables for Docker
 
