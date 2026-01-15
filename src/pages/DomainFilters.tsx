@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Doc } from "../../convex/_generated/dataModel";
 import Layout from "../components/Layout";
 
 export default function DomainFilters() {
@@ -113,7 +114,7 @@ export default function DomainFilters() {
               <p className="no-domains">No filtered domains yet.</p>
             )}
             {domains &&
-              domains.map((domain) => (
+              domains.map((domain: Doc<"filteredDomains">) => (
                 <div key={domain._id} className="domain-item">
                   <span>{domain.domain}</span>
                   <button

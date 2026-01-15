@@ -2,6 +2,9 @@ import { action, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { internal, api } from "./_generated/api";
 
+// Maximum messages to process per sync run to avoid timeout
+const MAX_MESSAGES_PER_SYNC = 100;
+
 function parseEmailAddress(fromHeader: string): { email: string; name: string } {
   // Handle formats like: "John Doe <john@example.com>" or "john@example.com"
   const match = fromHeader.match(/^(?:"?([^"<]*)"?\s*)?<?([^>]+@[^>]+)>?$/);
@@ -41,6 +44,26 @@ export const checkIfSynced = internalQuery({
   },
 });
 
+export const checkIfSyncedBatch = internalQuery({
+  args: {
+    connectionId: v.id("connections"),
+    messageIds: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const results: Record<string, boolean> = {};
+    for (const messageId of args.messageIds) {
+      const existing = await ctx.db
+        .query("syncedEmails")
+        .withIndex("by_message", (q) =>
+          q.eq("connectionId", args.connectionId).eq("messageId", messageId)
+        )
+        .first();
+      results[messageId] = existing !== null;
+    }
+    return results;
+  },
+});
+
 export const markSynced = internalMutation({
   args: {
     connectionId: v.id("connections"),
@@ -52,6 +75,23 @@ export const markSynced = internalMutation({
       messageId: args.messageId,
       syncedAt: Date.now(),
     });
+  },
+});
+
+export const markSyncedBatch = internalMutation({
+  args: {
+    connectionId: v.id("connections"),
+    messageIds: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    for (const messageId of args.messageIds) {
+      await ctx.db.insert("syncedEmails", {
+        connectionId: args.connectionId,
+        messageId,
+        syncedAt: now,
+      });
+    }
   },
 });
 
@@ -68,9 +108,21 @@ export const getFilteredDomains = internalQuery({
 
 export const syncConnection = action({
   args: { connectionId: v.id("connections") },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{
+    processedCount: number;
+    newAddressCount: number;
+    moreToProcess: boolean;
+    message: string;
+  }> => {
     // Get connection details
-    const connection = await ctx.runQuery(api.connections.get, {
+    const connection: {
+      _id: string;
+      accessToken: string;
+      refreshToken: string;
+      tokenExpiry: number;
+      mailboxFolder: string;
+      lastSyncAt?: number;
+    } | null = await ctx.runQuery(api.connections.get, {
       id: args.connectionId,
     });
 
@@ -86,7 +138,7 @@ export const syncConnection = action({
 
     try {
       // Check if token needs refresh
-      let accessToken = connection.accessToken;
+      let accessToken: string = connection.accessToken;
       if (connection.tokenExpiry < Date.now()) {
         const refreshed = await ctx.runAction(api.google.oauth.refreshAccessToken, {
           refreshToken: connection.refreshToken,
@@ -105,34 +157,45 @@ export const syncConnection = action({
       });
       const filteredDomains = new Set(filteredDomainsArray);
 
-      let pageToken: string | undefined;
       let processedCount = 0;
       let newAddressCount = 0;
+      let hasMore = false;
 
-      do {
-        // List messages
-        const { messages, nextPageToken } = await ctx.runAction(
-          api.google.gmail.listMessages,
-          {
-            accessToken,
-            labelId: connection.mailboxFolder,
-            afterTimestamp: connection.lastSyncAt,
-            pageToken,
-          }
-        );
+      // List messages (single page, limited)
+      const listResult: {
+        messages: Array<{ id: string; threadId: string }>;
+        nextPageToken?: string;
+      } = await ctx.runAction(
+        api.google.gmail.listMessages,
+        {
+          accessToken,
+          labelId: connection.mailboxFolder,
+          afterTimestamp: connection.lastSyncAt,
+          pageToken: undefined,
+        }
+      );
+      const messages = listResult.messages;
+      const nextPageToken: string | undefined = listResult.nextPageToken;
 
-        // Process each message
-        for (const msg of messages) {
-          // Check if already synced
-          const alreadySynced = await ctx.runQuery(internal.sync.checkIfSynced, {
-            connectionId: args.connectionId,
-            messageId: msg.id,
-          });
+      hasMore = !!nextPageToken;
 
-          if (alreadySynced) {
-            continue;
-          }
+      // Check which messages are already synced (batch query)
+      const messageIds = messages.map((m: { id: string }) => m.id);
+      const syncedStatus = await ctx.runQuery(internal.sync.checkIfSyncedBatch, {
+        connectionId: args.connectionId,
+        messageIds,
+      });
 
+      // Filter to only unsynced messages
+      const unsyncedMessages = messages.filter((m: { id: string }) => !syncedStatus[m.id]);
+
+      // Limit to MAX_MESSAGES_PER_SYNC
+      const toProcess = unsyncedMessages.slice(0, MAX_MESSAGES_PER_SYNC);
+      const syncedMessageIds: string[] = [];
+
+      // Process each message
+      for (const msg of toProcess) {
+        try {
           // Get message details
           const details = await ctx.runAction(api.google.gmail.getMessage, {
             accessToken,
@@ -155,31 +218,43 @@ export const syncConnection = action({
             newAddressCount++;
           }
 
-          // Mark as synced
-          await ctx.runMutation(internal.sync.markSynced, {
-            connectionId: args.connectionId,
-            messageId: msg.id,
-          });
-
+          syncedMessageIds.push(msg.id);
           processedCount++;
+        } catch (error) {
+          console.error(`Failed to process message ${msg.id}:`, error);
+          // Continue with next message
         }
+      }
 
-        pageToken = nextPageToken;
+      // Mark processed messages as synced (batch)
+      if (syncedMessageIds.length > 0) {
+        await ctx.runMutation(internal.sync.markSyncedBatch, {
+          connectionId: args.connectionId,
+          messageIds: syncedMessageIds,
+        });
+      }
 
-        // Small delay to avoid rate limiting
-        if (pageToken) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-      } while (pageToken);
+      // Determine final status
+      const moreToProcess: boolean = hasMore || unsyncedMessages.length > MAX_MESSAGES_PER_SYNC;
 
-      // Update status to idle
+      // Update status
       await ctx.runMutation(api.connections.updateSyncStatus, {
         id: args.connectionId,
-        syncStatus: "idle",
-        lastSyncAt: Date.now(),
+        syncStatus: moreToProcess ? "idle" : "idle",
+        lastSyncAt: moreToProcess ? connection.lastSyncAt : Date.now(),
+        lastError: moreToProcess
+          ? `Processed ${processedCount} emails. More remaining - sync again to continue.`
+          : undefined,
       });
 
-      return { processedCount, newAddressCount };
+      return {
+        processedCount,
+        newAddressCount,
+        moreToProcess,
+        message: moreToProcess
+          ? `Processed ${processedCount} emails. Click sync again to continue.`
+          : `Sync complete. Processed ${processedCount} emails, found ${newAddressCount} new addresses.`
+      };
     } catch (error) {
       // Update status to error
       await ctx.runMutation(api.connections.updateSyncStatus, {

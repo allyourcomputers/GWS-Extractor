@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
+import { Doc } from "../../convex/_generated/dataModel";
 import { useAuth } from "../lib/AuthContext";
 import Layout from "../components/Layout";
 import ConnectionCard from "../components/ConnectionCard";
@@ -42,7 +43,7 @@ export default function Dashboard() {
         )}
 
         {connections &&
-          connections.map((conn) => (
+          connections.map((conn: Doc<"connections">) => (
             <ConnectionCardWithCount
               key={conn._id}
               connection={conn}
@@ -58,7 +59,7 @@ function ConnectionCardWithCount({
   connection,
   onEdit,
 }: {
-  connection: any;
+  connection: Doc<"connections">;
   onEdit: () => void;
 }) {
   const count = useQuery(api.addresses.count, {
