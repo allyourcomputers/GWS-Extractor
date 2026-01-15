@@ -96,10 +96,28 @@ export const updateSyncStatus = mutation({
     syncStatus: v.string(),
     lastSyncAt: v.optional(v.number()),
     lastError: v.optional(v.string()),
+    totalMessagesToSync: v.optional(v.number()),
+    messagesProcessed: v.optional(v.number()),
+    syncPageToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
-    await ctx.db.patch(id, updates);
+    // Filter out undefined values
+    const filtered = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined)
+    );
+    await ctx.db.patch(id, filtered);
+  },
+});
+
+export const clearSyncProgress = mutation({
+  args: { id: v.id("connections") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      totalMessagesToSync: undefined,
+      messagesProcessed: undefined,
+      syncPageToken: undefined,
+    });
   },
 });
 

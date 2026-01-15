@@ -170,6 +170,30 @@ body {
   color: #666;
 }
 
+.sync-progress {
+  margin: 1rem 0;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #4285f4;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: #666;
+}
+
 .connection-footer {
   display: flex;
   justify-content: space-between;
@@ -181,6 +205,24 @@ body {
 .connection-footer span {
   color: #999;
   font-size: 0.875rem;
+}
+
+.sync-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.export-button {
+  background: #34a853;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.export-button:hover {
+  background: #2d9249;
 }
 
 .sync-button {

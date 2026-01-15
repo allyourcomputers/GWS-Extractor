@@ -111,3 +111,33 @@ export const listLabels = action({
     return data.labels as Array<{ id: string; name: string; type: string }>;
   },
 });
+
+export const getLabelInfo = action({
+  args: {
+    accessToken: v.string(),
+    labelId: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    const response = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/labels/${encodeURIComponent(args.labelId)}`,
+      {
+        headers: { Authorization: `Bearer ${args.accessToken}` },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Gmail API error: ${error}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      id: data.id as string,
+      name: data.name as string,
+      messagesTotal: data.messagesTotal as number,
+      messagesUnread: data.messagesUnread as number,
+      threadsTotal: data.threadsTotal as number,
+    };
+  },
+});

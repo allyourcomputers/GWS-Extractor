@@ -14,15 +14,34 @@ export default function ConnectionCard({
   onEdit,
 }: ConnectionCardProps) {
   const syncConnection = useAction(api.sync.syncConnection);
+  const cancelSync = useAction(api.sync.cancelSync);
   const exportToSheets = useAction(api.sheets.exportToSheets);
 
   const handleSync = async () => {
     try {
-      await syncConnection({ connectionId: connection._id });
-      await exportToSheets({ connectionId: connection._id });
+      const result = await syncConnection({ connectionId: connection._id });
+      console.log("Sync started:", result.message);
     } catch (error) {
       console.error("Sync failed:", error);
       alert("Sync failed. Check console for details.");
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      await cancelSync({ connectionId: connection._id });
+    } catch (error) {
+      console.error("Cancel failed:", error);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      await exportToSheets({ connectionId: connection._id });
+      alert("Export complete!");
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Export failed. Check console for details.");
     }
   };
 
@@ -47,6 +66,11 @@ export default function ConnectionCard({
     }
   };
 
+  const isSyncing = connection.syncStatus === "syncing";
+  const total = connection.totalMessagesToSync || 0;
+  const processed = connection.messagesProcessed || 0;
+  const percentComplete = total > 0 ? Math.round((processed / total) * 100) : 0;
+
   return (
     <div className="connection-card">
       <div className="connection-header">
@@ -58,25 +82,52 @@ export default function ConnectionCard({
       <div className="connection-stats">
         <span>{addressCount} addresses</span>
         <span style={{ color: getStatusColor() }}>
-          {connection.syncStatus === "syncing"
-            ? "Syncing..."
-            : connection.isActive
-              ? "Active"
-              : "Paused"}
+          {isSyncing
+            ? `Syncing... ${percentComplete}%`
+            : connection.syncStatus === "error"
+              ? "Error"
+              : connection.isActive
+                ? "Active"
+                : "Paused"}
         </span>
         <span>Syncs {connection.syncSchedule}</span>
       </div>
+
+      {isSyncing && total > 0 && (
+        <div className="sync-progress">
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{ width: `${percentComplete}%` }}
+            />
+          </div>
+          <span className="progress-text">
+            {processed} / {total} messages
+          </span>
+        </div>
+      )}
+
       <div className="connection-footer">
         <span>Last sync: {formatLastSync(connection.lastSyncAt)}</span>
-        <button
-          onClick={handleSync}
-          disabled={connection.syncStatus === "syncing"}
-          className="sync-button"
-        >
-          {connection.syncStatus === "syncing" ? "Syncing..." : "Sync Now"}
-        </button>
+        <div className="sync-buttons">
+          {isSyncing ? (
+            <button onClick={handleCancel} className="cancel-button">
+              Cancel
+            </button>
+          ) : (
+            <>
+              <button onClick={handleExport} className="export-button">
+                Export
+              </button>
+              <button onClick={handleSync} className="sync-button">
+                Sync Now
+              </button>
+            </>
+          )}
+        </div>
       </div>
-      {connection.lastError && (
+
+      {connection.lastError && connection.syncStatus === "error" && (
         <div className="connection-error">Error: {connection.lastError}</div>
       )}
     </div>

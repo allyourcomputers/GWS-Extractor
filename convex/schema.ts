@@ -22,6 +22,10 @@ export default defineSchema({
     lastSyncAt: v.optional(v.number()),
     syncStatus: v.string(),
     lastError: v.optional(v.string()),
+    // Sync progress tracking
+    totalMessagesToSync: v.optional(v.number()),
+    messagesProcessed: v.optional(v.number()),
+    syncPageToken: v.optional(v.string()),
   }).index("by_user", ["userId"]),
 
   filteredDomains: defineTable({
