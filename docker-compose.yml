@@ -2,10 +2,11 @@ version: "3.8"
 
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        - VITE_CONVEX_URL=${VITE_CONVEX_URL}
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
     ports:
       - "3300:80"
-    environment:
-      - VITE_CONVEX_URL=${VITE_CONVEX_URL}
-      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
     restart: unless-stopped
