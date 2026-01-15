@@ -5,12 +5,14 @@ Extract email addresses from Gmail and export to Google Sheets. Perfect for buil
 ## Features
 
 - **Gmail Integration**: Connect to any Gmail folder/label to extract sender addresses
-- **Google Sheets Export**: Automatically export addresses to Google Sheets (append new, update existing)
+- **Google Sheets Export**: Export addresses to Google Sheets (append new, update existing)
 - **Create Spreadsheets**: Create new Google Spreadsheets directly from the app
 - **Domain Filtering**: Exclude internal domains (e.g., your company's domain) from extraction
 - **Multi-Account Support**: Set up multiple connections with different configurations
 - **Scheduled Sync**: Configure automatic syncing (every 15 min, hourly, 4 hours, daily, or manual only)
-- **Manual Sync**: Trigger sync on-demand from the dashboard
+- **Background Processing**: Large mailboxes are processed in batches automatically
+- **Real-time Progress**: See sync progress with live updates (X/Y messages, percentage complete)
+- **Cancellable Syncs**: Cancel long-running syncs at any time
 
 ## Setup
 
@@ -151,23 +153,69 @@ The following environment variables must be set (via `.env` file or docker-compo
 3. Add domains to exclude (e.g., `yourcompany.com`)
 4. Use bulk import to add multiple domains at once
 
-### Syncing
+### Syncing Emails
 
-- **Automatic**: Connections sync according to their schedule
-- **Manual**: Click "Sync Now" on any connection card in the dashboard
+#### How Sync Works
 
-### Google Sheet Format
+When you click **"Sync Now"**:
 
-Extracted addresses are exported to your Google Sheet with the following columns:
+1. The app gets the total email count from your Gmail folder
+2. Emails are processed in **batches of 50** to avoid timeouts
+3. Each batch runs automatically with a 2-second delay between batches
+4. A **progress bar** shows real-time progress (e.g., "1,234 / 5,000 messages - 25%")
+5. Processing continues in the background until all emails are done
+
+#### Sync Controls
+
+- **Sync Now**: Start syncing emails from Gmail
+- **Cancel**: Stop an ongoing sync at any point (progress is saved)
+- **Export**: Manually export collected addresses to Google Sheets
+
+#### Scheduled Sync
+
+Connections can be configured to sync automatically:
+- Every 15 minutes
+- Every hour
+- Every 4 hours
+- Daily
+- Manual only
+
+### Exporting to Google Sheets
+
+Addresses are exported to your configured Google Sheet. You can:
+
+- **Auto-export**: Happens automatically after sync completes
+- **Manual export**: Click the "Export" button on any connection
+
+#### Google Sheet Format
 
 | Email | Name | First Seen | Last Seen | Message Count |
 |-------|------|------------|-----------|---------------|
 | john@example.com | John Doe | 2024-01-15 | 2024-01-20 | 5 |
 
-## Tech Stack
+## Technical Details
+
+### Batch Processing
+
+Large mailboxes are handled efficiently:
+
+- **Batch size**: 50 emails per batch
+- **Delay between batches**: 2 seconds (to avoid Gmail API rate limits)
+- **Progress tracking**: Real-time updates stored in database
+- **Resumable**: If cancelled, progress is saved and can continue later
+- **Automatic scheduling**: Uses Convex scheduler for reliable background processing
+
+### Architecture
+
+```
+┌─────────────┐     ┌─────────────────┐     ┌─────────────┐
+│   Browser   │────▶│  Convex Cloud   │────▶│  Gmail API  │
+│  (React)    │◀────│  (Functions)    │◀────│  Sheets API │
+└─────────────┘     └─────────────────┘     └─────────────┘
+```
 
 - **Frontend**: React 18, TypeScript, Vite
-- **Backend**: Convex (serverless functions + database)
+- **Backend**: Convex (serverless functions + real-time database)
 - **Authentication**: Google OAuth 2.0
 - **APIs**: Gmail API, Google Sheets API, Google Drive API
 - **Deployment**: Docker + nginx
@@ -192,6 +240,16 @@ Extracted addresses are exported to your Google Sheet with the following columns
 1. Ensure Google Sheets API is enabled
 2. Verify OAuth scopes include `spreadsheets`
 
+### Sync times out or fails
+
+1. Large mailboxes are processed in batches automatically
+2. If sync fails, click "Sync Now" again - it will resume from where it left off
+3. Check Convex dashboard logs for detailed error messages
+
 ### Token errors
 
 If you see token-related errors, sign out and sign back in to get fresh tokens.
+
+### "Function not found" errors
+
+Run `npx convex deploy` to ensure all backend functions are deployed.
