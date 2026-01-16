@@ -171,11 +171,13 @@ export default function ConnectionCard({
             <span className="progress-text">
               {processed.toLocaleString()} / {total.toLocaleString()} messages
             </span>
-            {calculateTimeRemaining() !== null && (
-              <span className="time-remaining">
-                {formatTimeRemaining(calculateTimeRemaining()!)}
-              </span>
-            )}
+            <span className="time-remaining">
+              {calculateTimeRemaining() !== null
+                ? formatTimeRemaining(calculateTimeRemaining()!)
+                : processed > 0
+                  ? "Estimating..."
+                  : "Starting..."}
+            </span>
           </div>
         </div>
       )}

@@ -117,13 +117,15 @@ export const syncConnection = action({
     });
 
     // Update status to syncing with total count
+    // Only set syncStartedAt if this is a fresh sync (no previous progress)
+    const isFreshSync = !connection.messagesProcessed || connection.messagesProcessed === 0;
     await ctx.runMutation(api.connections.updateSyncStatus, {
       id: args.connectionId,
       syncStatus: "syncing",
       totalMessagesToSync: labelInfo.messagesTotal,
       messagesProcessed: connection.messagesProcessed || 0,
       lastError: `Starting sync of ${labelInfo.messagesTotal} messages...`,
-      syncStartedAt: Date.now(),
+      ...(isFreshSync ? { syncStartedAt: Date.now() } : {}),
     });
 
     // Schedule the first batch
