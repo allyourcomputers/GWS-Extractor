@@ -252,6 +252,28 @@ body {
   font-size: 0.875rem;
 }
 
+.connection-warning {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.reset-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background: #5a6268;
+}
+
 .dashboard-header {
   display: flex;
   justify-content: space-between;

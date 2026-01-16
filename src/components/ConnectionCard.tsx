@@ -1,4 +1,4 @@
-import { useAction } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 
@@ -16,6 +16,7 @@ export default function ConnectionCard({
   const syncConnection = useAction(api.sync.syncConnection);
   const cancelSync = useAction(api.sync.cancelSync);
   const exportToSheets = useAction(api.sheets.exportToSheets);
+  const resetSync = useMutation(api.connections.resetSync);
 
   const handleSync = async () => {
     try {
@@ -32,6 +33,18 @@ export default function ConnectionCard({
       await cancelSync({ connectionId: connection._id });
     } catch (error) {
       console.error("Cancel failed:", error);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!confirm("Reset this connection? This will clear the sync status and allow you to sync again.")) {
+      return;
+    }
+    try {
+      await resetSync({ id: connection._id });
+    } catch (error) {
+      console.error("Reset failed:", error);
+      alert("Reset failed. Check console for details.");
     }
   };
 
@@ -67,9 +80,13 @@ export default function ConnectionCard({
   };
 
   const isSyncing = connection.syncStatus === "syncing";
+  const isError = connection.syncStatus === "error";
   const total = connection.totalMessagesToSync || 0;
   const processed = connection.messagesProcessed || 0;
   const percentComplete = total > 0 ? Math.round((processed / total) * 100) : 0;
+
+  // Detect stuck sync (syncing for more than 5 minutes with no progress)
+  const isStuck = isSyncing && total > 0 && processed === 0;
 
   return (
     <div className="connection-card">
@@ -84,7 +101,7 @@ export default function ConnectionCard({
         <span style={{ color: getStatusColor() }}>
           {isSyncing
             ? `Syncing... ${percentComplete}%`
-            : connection.syncStatus === "error"
+            : isError
               ? "Error"
               : connection.isActive
                 ? "Active"
@@ -111,9 +128,23 @@ export default function ConnectionCard({
         <span>Last sync: {formatLastSync(connection.lastSyncAt)}</span>
         <div className="sync-buttons">
           {isSyncing ? (
-            <button onClick={handleCancel} className="cancel-button">
-              Cancel
-            </button>
+            <>
+              <button onClick={handleReset} className="reset-button">
+                Reset
+              </button>
+              <button onClick={handleCancel} className="cancel-button">
+                Cancel
+              </button>
+            </>
+          ) : isError ? (
+            <>
+              <button onClick={handleReset} className="reset-button">
+                Reset
+              </button>
+              <button onClick={handleSync} className="sync-button">
+                Retry
+              </button>
+            </>
           ) : (
             <>
               <button onClick={handleExport} className="export-button">
@@ -127,8 +158,14 @@ export default function ConnectionCard({
         </div>
       </div>
 
-      {connection.lastError && connection.syncStatus === "error" && (
+      {connection.lastError && isError && (
         <div className="connection-error">Error: {connection.lastError}</div>
+      )}
+
+      {isStuck && (
+        <div className="connection-warning">
+          Sync appears stuck. Try clicking Reset to clear and start fresh.
+        </div>
       )}
     </div>
   );
