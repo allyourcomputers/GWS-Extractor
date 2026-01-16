@@ -133,15 +133,46 @@ export const updateTokens = mutation({
   },
 });
 
-// Reset a stuck sync
+// Reset a stuck sync (preserves progress)
 export const resetSync = mutation({
   args: { id: v.id("connections") },
   handler: async (ctx, args) => {
+    // Count actual synced emails to preserve accurate progress
+    const syncedCount = await ctx.db
+      .query("syncedEmails")
+      .withIndex("by_connection", (q) => q.eq("connectionId", args.id))
+      .collect();
+
+    await ctx.db.patch(args.id, {
+      syncStatus: "idle",
+      syncPageToken: undefined,
+      messagesProcessed: syncedCount.length,
+      lastError: undefined,
+    });
+  },
+});
+
+// Full reset - clears all progress and synced emails
+export const fullReset = mutation({
+  args: { id: v.id("connections") },
+  handler: async (ctx, args) => {
+    // Delete all synced email records
+    const syncedEmails = await ctx.db
+      .query("syncedEmails")
+      .withIndex("by_connection", (q) => q.eq("connectionId", args.id))
+      .collect();
+
+    for (const email of syncedEmails) {
+      await ctx.db.delete(email._id);
+    }
+
+    // Reset connection status
     await ctx.db.patch(args.id, {
       syncStatus: "idle",
       syncPageToken: undefined,
       messagesProcessed: undefined,
       totalMessagesToSync: undefined,
+      lastSyncAt: undefined,
       lastError: undefined,
     });
   },
