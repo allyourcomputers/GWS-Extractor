@@ -10,6 +10,53 @@
 
 ---
 
+## Post-Implementation Updates
+
+> **Status:** This plan has been fully implemented. The following enhancements were added after the initial implementation:
+
+### Batch Processing Improvements
+- Increased batch size from 50 to **200 messages per batch**
+- Reduced delay between batches from 2 seconds to **500ms**
+- Added **race condition protection** - status is re-checked before updates to prevent sync/delete conflicts
+
+### New Sync Statuses
+- Added `"deleting"` status - shown when connection is being deleted
+- Added `"resetting"` status - shown during full reset operation
+
+### Batch Deletion
+- Connections are now deleted in **batches of 500 records** to avoid Convex read limits (4096 max)
+- Deletes domains, synced emails, addresses, then the connection itself
+- Shows "Deleting..." status during the process
+
+### Reset Functionality
+- **Reset button** - clears stuck sync status while preserving synced data
+- **Full Reset** - deletes all synced emails to start fresh (runs in background)
+
+### Stuck Detection
+- Added `syncStartedAt` field to track when sync began
+- UI shows warning if sync has been running **2+ minutes with no progress**
+- Prevents false "stuck" warnings on newly started syncs
+
+### Time Remaining Estimates
+- Displays estimated time remaining during sync (e.g., "~2h 15m remaining")
+- Calculated from actual processing rate: `(remaining messages / processed messages) * elapsed time`
+- Only shows after first batch completes (when there's enough data to estimate)
+- Updates in real-time as sync progresses
+
+### OAuth Scope Updates
+- Added `drive.readonly` scope for listing available spreadsheets
+- Required for the spreadsheet dropdown to work
+
+### Spreadsheet Creation
+- Users can create new spreadsheets directly from the app
+- Added "+ Create new spreadsheet" option in the connection settings
+
+### Scheduler Protection
+- Cron job now skips connections with `"deleting"` or `"resetting"` status
+- Prevents sync from starting on connections being deleted
+
+---
+
 ## Phase 1: Project Setup
 
 ### Task 1: Initialize Node.js Project

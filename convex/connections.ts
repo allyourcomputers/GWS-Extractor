@@ -140,6 +140,7 @@ export const updateSyncStatus = mutation({
     totalMessagesToSync: v.optional(v.number()),
     messagesProcessed: v.optional(v.number()),
     syncPageToken: v.optional(v.string()),
+    syncStartedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;

@@ -68,6 +68,43 @@ export default function ConnectionCard({
     return `${days} day${days > 1 ? "s" : ""} ago`;
   };
 
+  const formatTimeRemaining = (ms: number) => {
+    if (ms <= 0) return "Almost done";
+    const totalSeconds = Math.ceil(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+    if (hours > 0) {
+      return `~${hours}h ${minutes}m remaining`;
+    } else if (minutes > 0) {
+      return `~${minutes}m remaining`;
+    } else {
+      return "< 1m remaining";
+    }
+  };
+
+  const calculateTimeRemaining = () => {
+    const startedAt = connection.syncStartedAt || 0;
+    const total = connection.totalMessagesToSync || 0;
+    const processed = connection.messagesProcessed || 0;
+
+    // Need at least some progress to estimate
+    if (startedAt === 0 || processed === 0 || total === 0) {
+      return null;
+    }
+
+    const elapsed = Date.now() - startedAt;
+    const remaining = total - processed;
+
+    // Calculate rate: messages per millisecond
+    const rate = processed / elapsed;
+
+    // Estimate remaining time
+    const estimatedMs = remaining / rate;
+
+    return estimatedMs;
+  };
+
   const getStatusColor = () => {
     switch (connection.syncStatus) {
       case "syncing":
@@ -90,8 +127,11 @@ export default function ConnectionCard({
   const processed = connection.messagesProcessed || 0;
   const percentComplete = total > 0 ? Math.round((processed / total) * 100) : 0;
 
-  // Detect stuck sync (syncing for more than 5 minutes with no progress)
-  const isStuck = isSyncing && total > 0 && processed === 0;
+  // Detect stuck sync (syncing for more than 2 minutes with no progress)
+  const syncStartedAt = connection.syncStartedAt || 0;
+  const syncDuration = Date.now() - syncStartedAt;
+  const TWO_MINUTES = 2 * 60 * 1000;
+  const isStuck = isSyncing && total > 0 && processed === 0 && syncDuration > TWO_MINUTES;
 
   return (
     <div className="connection-card">
@@ -127,9 +167,16 @@ export default function ConnectionCard({
               style={{ width: `${percentComplete}%` }}
             />
           </div>
-          <span className="progress-text">
-            {processed} / {total} messages
-          </span>
+          <div className="progress-info">
+            <span className="progress-text">
+              {processed.toLocaleString()} / {total.toLocaleString()} messages
+            </span>
+            {calculateTimeRemaining() !== null && (
+              <span className="time-remaining">
+                {formatTimeRemaining(calculateTimeRemaining()!)}
+              </span>
+            )}
+          </div>
         </div>
       )}
 

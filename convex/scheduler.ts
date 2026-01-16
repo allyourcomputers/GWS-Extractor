@@ -16,7 +16,10 @@ export const getDueConnections = internalQuery({
 
     return connections.filter((conn) => {
       if (!conn.isActive) return false;
+      // Skip connections that are syncing, deleting, or resetting
       if (conn.syncStatus === "syncing") return false;
+      if (conn.syncStatus === "deleting") return false;
+      if (conn.syncStatus === "resetting") return false;
       if (conn.syncSchedule === "manual") return false;
 
       const interval = SCHEDULE_INTERVALS[conn.syncSchedule] || Infinity;

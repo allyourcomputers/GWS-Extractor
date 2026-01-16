@@ -88,6 +88,14 @@ export const syncConnection = action({
       return { message: "Sync already in progress" };
     }
 
+    // Don't start sync if connection is being deleted or reset
+    if (connection.syncStatus === "deleting") {
+      return { message: "Connection is being deleted" };
+    }
+    if (connection.syncStatus === "resetting") {
+      return { message: "Connection is being reset" };
+    }
+
     // Refresh token if needed
     let accessToken: string = connection.accessToken;
     if (connection.tokenExpiry < Date.now()) {
@@ -115,6 +123,7 @@ export const syncConnection = action({
       totalMessagesToSync: labelInfo.messagesTotal,
       messagesProcessed: connection.messagesProcessed || 0,
       lastError: `Starting sync of ${labelInfo.messagesTotal} messages...`,
+      syncStartedAt: Date.now(),
     });
 
     // Schedule the first batch
@@ -253,6 +262,15 @@ export const processBatch = internalAction({
       const morePages = !!nextPageToken;
       const hasMore = moreInPage || morePages;
 
+      // Re-check connection status before updating (prevents race condition with delete/reset)
+      const currentConnection = await ctx.runQuery(api.connections.get, {
+        id: args.connectionId,
+      });
+      if (!currentConnection || currentConnection.syncStatus !== "syncing") {
+        console.log("Sync was cancelled or connection deleted during batch processing");
+        return;
+      }
+
       if (hasMore) {
         // Update progress and schedule next batch
         await ctx.runMutation(api.connections.updateSyncStatus, {
@@ -280,11 +298,15 @@ export const processBatch = internalAction({
       }
     } catch (error) {
       console.error("Batch processing error:", error);
-      await ctx.runMutation(api.connections.updateSyncStatus, {
-        id: args.connectionId,
-        syncStatus: "error",
-        lastError: error instanceof Error ? error.message : "Unknown error",
-      });
+      // Only set error status if connection still exists and is still syncing
+      const conn = await ctx.runQuery(api.connections.get, { id: args.connectionId });
+      if (conn && conn.syncStatus === "syncing") {
+        await ctx.runMutation(api.connections.updateSyncStatus, {
+          id: args.connectionId,
+          syncStatus: "error",
+          lastError: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
     }
   },
 });

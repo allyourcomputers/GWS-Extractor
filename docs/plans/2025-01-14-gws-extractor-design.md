@@ -78,8 +78,12 @@ Google Workspace account configurations.
 | `syncSchedule` | string | Interval identifier |
 | `isActive` | boolean | Enable/disable sync |
 | `lastSyncAt` | number | Last successful sync timestamp |
-| `syncStatus` | string | "idle" / "syncing" / "error" |
+| `syncStatus` | string | "idle" / "syncing" / "error" / "deleting" / "resetting" |
 | `lastError` | string | Error message if failed |
+| `totalMessagesToSync` | number? | Total messages in folder for progress tracking |
+| `messagesProcessed` | number? | Number of messages processed so far |
+| `syncPageToken` | string? | Gmail API pagination token for resuming |
+| `syncStartedAt` | number? | Timestamp when current sync started |
 
 ### Table: `filteredDomains`
 Internal domains to exclude (per connection).
@@ -120,10 +124,11 @@ Extracted email addresses.
 5. Set authorized redirect URI
 
 ### Required Scopes
-- `gmail.readonly`
-- `spreadsheets`
-- `userinfo.email`
-- `userinfo.profile`
+- `gmail.readonly` - Read emails from Gmail
+- `spreadsheets` - Create and update Google Sheets
+- `drive.readonly` - List available spreadsheets
+- `userinfo.email` - Get user email address
+- `userinfo.profile` - Get user display name
 
 ### Token Management
 - Store encrypted tokens in `connections` table
@@ -133,22 +138,64 @@ Extracted email addresses.
 
 ## Email Sync Process
 
-1. **Refresh OAuth token** if needed
-2. **Query Gmail API** for messages in configured folder since last sync
-3. **Handle pagination** via nextPageToken
-4. **For each message**: fetch details, extract From header, parse email + name
-5. **Record in `syncedEmails`** to prevent reprocessing
-6. **For each address**: check against filtered domains, upsert into `addresses`
-7. **Update `lastSyncAt`** on connection
+### Starting a Sync
+1. **Check sync status** - abort if already syncing, deleting, or resetting
+2. **Refresh OAuth token** if needed
+3. **Get folder info** - total message count for progress tracking
+4. **Set status to "syncing"** with total count and start timestamp
+5. **Schedule first batch** via Convex scheduler
+
+### Batch Processing (200 messages per batch)
+1. **Re-check status** - abort if no longer "syncing" (handles cancellation/deletion)
+2. **Refresh OAuth token** if needed
+3. **List messages** using page token for pagination
+4. **Check which messages already synced** via `syncedEmails` table
+5. **For each unsynced message**: fetch details, extract From header, parse email + name
+6. **Record in `syncedEmails`** to prevent reprocessing
+7. **For each address**: check against filtered domains, upsert into `addresses`
+8. **Re-check status before updating** - prevents race condition with delete
+9. **Update progress** and schedule next batch (500ms delay)
+10. **When complete**: set status to "idle", update `lastSyncAt`
 
 ### Rate Limiting
 - Gmail API: 250 quota units/second per user
-- Batch requests where possible
-- Add delays between pages for high volume
+- 500ms delay between batches to avoid rate limits
+- Batch size: 200 messages per batch
 
 ### Error Handling
 - Token errors: attempt refresh, mark connection inactive if fails
-- API errors: log, retry with backoff, surface in UI
+- API errors: log, set status to "error" (only if still syncing)
+- Race condition protection: re-check status before any state updates
+
+### Stuck Detection
+- UI shows warning if syncing for 2+ minutes with no progress
+- User can click "Reset" to clear stuck status
+
+## Connection Deletion
+
+### Batch Deletion Process
+Large connections require batch deletion to avoid database limits (max 4096 reads per mutation):
+
+1. **Set status to "deleting"** - blocks new syncs and shows UI indicator
+2. **Delete filtered domains** (batch of 500)
+3. **Delete synced emails** (batch of 500) - largest table, may take multiple batches
+4. **Delete addresses** (batch of 500)
+5. **Delete connection** record
+
+Each batch schedules the next batch with 100ms delay. The scheduler cron job ignores connections with "deleting" status.
+
+### Reset Functionality
+
+**Simple Reset** (`resetSync`):
+- Clears sync status to "idle"
+- Preserves synced data (count from `syncedEmails` table)
+- Use when sync is stuck
+
+**Full Reset** (`fullReset`):
+- Sets status to "resetting"
+- Deletes all synced emails in batches
+- Clears progress counters
+- Use to start fresh
 
 ## Google Sheets Export
 
@@ -185,7 +232,12 @@ Extracted email addresses.
 - Master cron job runs every 15 minutes
 - Checks which connections are due based on `syncSchedule`
 - Triggers sync for due connections
-- Prevents overlaps via `syncStatus` check
+- Skips connections that are:
+  - Already syncing (`syncStatus === "syncing"`)
+  - Being deleted (`syncStatus === "deleting"`)
+  - Being reset (`syncStatus === "resetting"`)
+  - Inactive (`isActive === false`)
+  - Manual-only (`syncSchedule === "manual"`)
 
 ## Web Interface
 
@@ -197,7 +249,8 @@ Extracted email addresses.
 
 ### Key Features
 - Real-time sync status via Convex subscriptions
-- Visual feedback during operations
+- Visual feedback during operations (progress bar, percentage, time remaining)
+- Estimated time remaining calculated from actual processing rate
 - Easy domain management
 - Quick access to linked Google Sheet
 
@@ -217,7 +270,8 @@ GWS-Extractor/
 │   │   ├── oauth.ts           # OAuth token management
 │   │   ├── gmail.ts           # Gmail API wrapper
 │   │   └── sheets.ts          # Sheets API wrapper
-│   └── crons.ts               # Scheduled jobs
+│   ├── scheduler.ts           # Scheduled sync logic
+│   └── crons.ts               # Cron job definitions
 │
 ├── src/
 │   ├── App.tsx                # Main app with routing

@@ -26,6 +26,7 @@ export default defineSchema({
     totalMessagesToSync: v.optional(v.number()),
     messagesProcessed: v.optional(v.number()),
     syncPageToken: v.optional(v.string()),
+    syncStartedAt: v.optional(v.number()),
   }).index("by_user", ["userId"]),
 
   filteredDomains: defineTable({

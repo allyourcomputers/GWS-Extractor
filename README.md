@@ -10,9 +10,12 @@ Extract email addresses from Gmail and export to Google Sheets. Perfect for buil
 - **Domain Filtering**: Exclude internal domains (e.g., your company's domain) from extraction
 - **Multi-Account Support**: Set up multiple connections with different configurations
 - **Scheduled Sync**: Configure automatic syncing (every 15 min, hourly, 4 hours, daily, or manual only)
-- **Background Processing**: Large mailboxes are processed in batches automatically
+- **Background Processing**: Large mailboxes are processed in batches automatically (200 messages per batch)
 - **Real-time Progress**: See sync progress with live updates (X/Y messages, percentage complete)
+- **Time Estimates**: Shows estimated time remaining based on actual processing speed
 - **Cancellable Syncs**: Cancel long-running syncs at any time
+- **Reset Functionality**: Reset stuck syncs or perform full reset to start fresh
+- **Stuck Detection**: Automatically detects and alerts when sync appears stuck (no progress for 2+ minutes)
 
 ## Setup
 
@@ -160,16 +163,28 @@ The following environment variables must be set (via `.env` file or docker-compo
 When you click **"Sync Now"**:
 
 1. The app gets the total email count from your Gmail folder
-2. Emails are processed in **batches of 50** to avoid timeouts
-3. Each batch runs automatically with a 2-second delay between batches
-4. A **progress bar** shows real-time progress (e.g., "1,234 / 5,000 messages - 25%")
-5. Processing continues in the background until all emails are done
+2. Emails are processed in **batches of 200** to avoid timeouts
+3. Each batch runs automatically with a 500ms delay between batches
+4. A **progress bar** shows real-time progress (e.g., "12,345 / 49,612 messages - 25%")
+5. **Estimated time remaining** is calculated based on actual processing speed (e.g., "~2h 15m remaining")
+6. Processing continues in the background until all emails are done
+7. If no progress is made for 2+ minutes, a "stuck" warning appears
 
 #### Sync Controls
 
 - **Sync Now**: Start syncing emails from Gmail
 - **Cancel**: Stop an ongoing sync at any point (progress is saved)
+- **Reset**: Clear stuck sync status (preserves already-synced data)
 - **Export**: Manually export collected addresses to Google Sheets
+
+#### Connection Status
+
+Connections can have the following statuses:
+- **Active**: Connection is configured and ready
+- **Syncing**: Actively syncing emails from Gmail
+- **Deleting**: Connection is being deleted (happens in batches for large datasets)
+- **Resetting**: Full reset in progress (clearing all synced data)
+- **Error**: Last sync failed - check error message for details
 
 #### Scheduled Sync
 
@@ -199,11 +214,23 @@ Addresses are exported to your configured Google Sheet. You can:
 
 Large mailboxes are handled efficiently:
 
-- **Batch size**: 50 emails per batch
-- **Delay between batches**: 2 seconds (to avoid Gmail API rate limits)
+- **Batch size**: 200 emails per batch
+- **Delay between batches**: 500ms (to avoid Gmail API rate limits)
 - **Progress tracking**: Real-time updates stored in database
+- **Time estimates**: Calculated from actual processing rate (messages/second)
 - **Resumable**: If cancelled, progress is saved and can continue later
 - **Automatic scheduling**: Uses Convex scheduler for reliable background processing
+- **Race condition protection**: Status checks prevent sync/delete conflicts
+- **Stuck detection**: Warns if no progress after 2 minutes
+
+### Batch Deletion
+
+When deleting connections with large datasets:
+
+- Records are deleted in batches of 500 to avoid database limits
+- Connection shows "Deleting..." status during the process
+- Domains, synced emails, addresses, then the connection itself are deleted
+- Delete operation cannot be interrupted by scheduled syncs
 
 ### Architecture
 
@@ -245,6 +272,19 @@ Large mailboxes are handled efficiently:
 1. Large mailboxes are processed in batches automatically
 2. If sync fails, click "Sync Now" again - it will resume from where it left off
 3. Check Convex dashboard logs for detailed error messages
+
+### Sync appears stuck
+
+1. If sync shows 0% for more than 2 minutes, a warning will appear
+2. Click "Reset" to clear the stuck status and try again
+3. Reset preserves your synced data - only clears the sync state
+
+### Delete not working / sync and delete running together
+
+1. Ensure you've deployed the latest Convex functions: `npx convex deploy`
+2. Delete operations run in batches for large datasets - this is normal
+3. The connection will show "Deleting..." status while in progress
+4. Scheduled syncs are blocked when a connection is being deleted
 
 ### Token errors
 
