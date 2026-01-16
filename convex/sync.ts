@@ -3,9 +3,9 @@ import { v } from "convex/values";
 import { internal, api } from "./_generated/api";
 
 // Maximum messages to process per sync batch
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 200;
 // Delay between batches (in ms) to avoid rate limiting
-const BATCH_DELAY_MS = 2000;
+const BATCH_DELAY_MS = 500;
 
 function parseEmailAddress(fromHeader: string): { email: string; name: string } {
   const match = fromHeader.match(/^(?:"?([^"<]*)"?\s*)?<?([^>]+@[^>]+)>?$/);
