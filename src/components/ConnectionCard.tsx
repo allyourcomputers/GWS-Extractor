@@ -72,6 +72,9 @@ export default function ConnectionCard({
     switch (connection.syncStatus) {
       case "syncing":
         return "#f0ad4e";
+      case "deleting":
+      case "resetting":
+        return "#6c757d";
       case "error":
         return "#d9534f";
       default:
@@ -81,6 +84,8 @@ export default function ConnectionCard({
 
   const isSyncing = connection.syncStatus === "syncing";
   const isError = connection.syncStatus === "error";
+  const isDeleting = connection.syncStatus === "deleting";
+  const isResetting = connection.syncStatus === "resetting";
   const total = connection.totalMessagesToSync || 0;
   const processed = connection.messagesProcessed || 0;
   const percentComplete = total > 0 ? Math.round((processed / total) * 100) : 0;
@@ -99,13 +104,17 @@ export default function ConnectionCard({
       <div className="connection-stats">
         <span>{addressCount} addresses</span>
         <span style={{ color: getStatusColor() }}>
-          {isSyncing
-            ? `Syncing... ${percentComplete}%`
-            : isError
-              ? "Error"
-              : connection.isActive
-                ? "Active"
-                : "Paused"}
+          {isDeleting
+            ? "Deleting..."
+            : isResetting
+              ? "Resetting..."
+              : isSyncing
+                ? `Syncing... ${percentComplete}%`
+                : isError
+                  ? "Error"
+                  : connection.isActive
+                    ? "Active"
+                    : "Paused"}
         </span>
         <span>Syncs {connection.syncSchedule}</span>
       </div>
@@ -127,7 +136,9 @@ export default function ConnectionCard({
       <div className="connection-footer">
         <span>Last sync: {formatLastSync(connection.lastSyncAt)}</span>
         <div className="sync-buttons">
-          {isSyncing ? (
+          {isDeleting || isResetting ? (
+            <span className="status-text">Please wait...</span>
+          ) : isSyncing ? (
             <>
               <button onClick={handleReset} className="reset-button">
                 Reset

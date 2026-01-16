@@ -274,6 +274,12 @@ body {
   background: #5a6268;
 }
 
+.status-text {
+  color: #6c757d;
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
 .dashboard-header {
   display: flex;
   justify-content: space-between;
