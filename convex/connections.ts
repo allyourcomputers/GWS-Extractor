@@ -132,3 +132,17 @@ export const updateTokens = mutation({
     await ctx.db.patch(id, updates);
   },
 });
+
+// Reset a stuck sync
+export const resetSync = mutation({
+  args: { id: v.id("connections") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      syncStatus: "idle",
+      syncPageToken: undefined,
+      messagesProcessed: undefined,
+      totalMessagesToSync: undefined,
+      lastError: undefined,
+    });
+  },
+});
