@@ -7,6 +7,12 @@ function formatDate(timestamp: number): string {
   return new Date(timestamp).toISOString().split("T")[0];
 }
 
+// Wrap sheet tab name in single quotes for Sheets API ranges
+// Required when tab names are numeric (e.g., "2026") or contain special characters
+function quoteTab(tab: string): string {
+  return `'${tab.replace(/'/g, "''")}'`;
+}
+
 export const exportToSheets = action({
   args: { connectionId: v.id("connections") },
   handler: async (ctx, args): Promise<{ updatedCount: number; appendedCount: number }> => {
@@ -42,8 +48,15 @@ export const exportToSheets = action({
       return { updatedCount: 0, appendedCount: 0 };
     }
 
+    // Ensure the sheet tab exists
+    await ctx.runAction(api.google.sheets.ensureSheetTab, {
+      accessToken,
+      spreadsheetId: connection.sheetsId,
+      tabName: connection.sheetTab,
+    });
+
     // Get existing sheet data
-    const range = `${connection.sheetTab}!A:D`;
+    const range = `${quoteTab(connection.sheetTab)}!A:D`;
     const existing: { values: string[][] } = await ctx.runAction(api.google.sheets.getSheetData, {
       accessToken,
       spreadsheetId: connection.sheetsId,
@@ -87,7 +100,7 @@ export const exportToSheets = action({
       if (existingRow) {
         // Update existing row
         updates.push({
-          range: `${connection.sheetTab}!A${existingRow}:D${existingRow}`,
+          range: `${quoteTab(connection.sheetTab)}!A${existingRow}:D${existingRow}`,
           values: [rowData],
         });
       } else {
@@ -117,7 +130,7 @@ export const exportToSheets = action({
       await ctx.runAction(api.google.sheets.appendRows, {
         accessToken,
         spreadsheetId: connection.sheetsId,
-        range: `${connection.sheetTab}!A:D`,
+        range: `${quoteTab(connection.sheetTab)}!A:D`,
         values: appends,
       });
     }

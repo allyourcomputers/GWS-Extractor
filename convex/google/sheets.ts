@@ -113,6 +113,63 @@ export const listSpreadsheets = action({
   },
 });
 
+export const ensureSheetTab = action({
+  args: {
+    accessToken: v.string(),
+    spreadsheetId: v.string(),
+    tabName: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    // First check if the tab already exists
+    const metaResponse = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${args.spreadsheetId}?fields=sheets.properties.title`,
+      {
+        headers: { Authorization: `Bearer ${args.accessToken}` },
+      }
+    );
+
+    if (!metaResponse.ok) {
+      const error = await metaResponse.text();
+      throw new Error(`Sheets API error: ${error}`);
+    }
+
+    const meta = await metaResponse.json();
+    const existingTabs = (meta.sheets || []).map(
+      (s: { properties: { title: string } }) => s.properties.title
+    );
+
+    if (existingTabs.includes(args.tabName)) {
+      return; // Tab already exists
+    }
+
+    // Create the tab
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${args.spreadsheetId}:batchUpdate`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${args.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          requests: [
+            {
+              addSheet: {
+                properties: { title: args.tabName },
+              },
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Sheets API error: ${error}`);
+    }
+  },
+});
+
 export const createSpreadsheet = action({
   args: {
     accessToken: v.string(),
