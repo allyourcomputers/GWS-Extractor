@@ -17,7 +17,7 @@ export default function ConnectionSettings() {
   const { id } = useParams<{ id: string }>();
   const isNew = id === "new";
   const navigate = useNavigate();
-  const { auth } = useAuth();
+  const { auth, getValidAccessToken } = useAuth();
 
   const connection = useQuery(
     api.connections.get,
@@ -70,10 +70,11 @@ export default function ConnectionSettings() {
       setOptionsError(null);
 
       try {
+        const accessToken = await getValidAccessToken();
         console.log("Loading Gmail labels and spreadsheets...");
         const [labelsResult, spreadsheetsResult] = await Promise.all([
-          listLabels({ accessToken: auth.accessToken }),
-          listSpreadsheets({ accessToken: auth.accessToken }),
+          listLabels({ accessToken }),
+          listSpreadsheets({ accessToken }),
         ]);
         console.log("Labels loaded:", labelsResult);
         console.log("Spreadsheets loaded:", spreadsheetsResult);
@@ -88,7 +89,7 @@ export default function ConnectionSettings() {
     };
 
     loadOptions();
-  }, [auth?.accessToken, listLabels, listSpreadsheets]);
+  }, [auth?.accessToken, listLabels, listSpreadsheets, getValidAccessToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,10 +97,11 @@ export default function ConnectionSettings() {
 
     try {
       if (isNew) {
+        const accessToken = await getValidAccessToken();
         await createConnection({
           userId: auth!.userId as any,
           name,
-          accessToken: auth!.accessToken!,
+          accessToken,
           refreshToken: auth!.refreshToken!,
           tokenExpiry: auth!.tokenExpiry!,
           mailboxFolder,
@@ -145,8 +147,9 @@ export default function ConnectionSettings() {
 
     setCreatingSheet(true);
     try {
+      const accessToken = await getValidAccessToken();
       const newSheet = await createSpreadsheet({
-        accessToken: auth.accessToken,
+        accessToken,
         title: newSheetName.trim(),
         sheetName: sheetTab || "Addresses",
       });

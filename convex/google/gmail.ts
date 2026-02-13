@@ -22,17 +22,16 @@ export const listMessages = action({
     pageToken: v.optional(v.string()),
   },
   handler: async (_ctx, args) => {
-    let query = `in:${args.labelId}`;
+    const params = new URLSearchParams({
+      labelIds: args.labelId,
+      maxResults: "100",
+    });
+
     if (args.afterTimestamp) {
       const date = new Date(args.afterTimestamp);
       const dateStr = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-      query += ` after:${dateStr}`;
+      params.set("q", `after:${dateStr}`);
     }
-
-    const params = new URLSearchParams({
-      q: query,
-      maxResults: "100",
-    });
 
     if (args.pageToken) {
       params.set("pageToken", args.pageToken);
